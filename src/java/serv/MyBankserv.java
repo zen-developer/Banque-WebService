@@ -8,6 +8,7 @@ package serv;
 
 import db.Card;
 import db.CardJpaController;
+import java.util.Date;
 import javax.jws.WebService;
 import javax.jws.WebMethod;
 import javax.jws.WebParam;
@@ -22,22 +23,27 @@ import model.Validation;
  */
 @WebService(serviceName = "MyBankserv")
 public class MyBankserv {
-EntityManagerFactory emf = Persistence.createEntityManagerFactory("Bank_webservPU");
+    EntityManagerFactory emf = Persistence.createEntityManagerFactory("MyBank_webservPU");
     CardJpaController cc = new CardJpaController(emf);
-    EntityManager em =emf.createEntityManager();
+    EntityManager em = emf.createEntityManager();
     /**
      * This is a sample web service operation
      */
  
+    
+    
     @WebMethod(operationName = "valideCarte")
     public Validation valideCarte(int ind)
     {
-       Validation v=new Validation();
+        Validation v=new Validation();
+        
         Card c=null;
+        
         c=(Card)em.find(Card.class,ind);
+        
         if(c==null)
         {
-            v.setMessage("carte introuvable");
+            v.setMessage("Erreur : Carte introuvable");
             v.setValide(false);
             return v;
         }
@@ -45,13 +51,13 @@ EntityManagerFactory emf = Persistence.createEntityManagerFactory("Bank_webservP
         {
             if(c.getDateExp().getTime()-System.currentTimeMillis()<=0)
             {
-                v.setMessage("carte expirée");
+                v.setMessage("Erreur : Carte expirée");
                 v.setValide(false);
                 return v;
             }
             else
             {
-                v.setMessage("carte valide");
+                v.setMessage("Succés : Carte validée et enregistrement effectué");
                 v.setValide(true);
                 return v;
             }
@@ -75,5 +81,50 @@ EntityManagerFactory emf = Persistence.createEntityManagerFactory("Bank_webservP
          cc.edit(c);
         }
         return msg;
+    }
+
+    /**
+     * Web service operation
+     */
+    @WebMethod(operationName = "validerCarte")
+    public Validation validerCarte(@WebParam(name = "num_carte") String num_carte, @WebParam(name = "type_carte") String type_carte, @WebParam(name = "date_exp") Date date_exp, @WebParam(name = "nom_carte") String nom_carte, @WebParam(name = "cvv") int cvv) {
+        //TODO write your implementation code here:
+        Validation v=new Validation();
+        
+        Card c=null;
+        System.out.println("NUM CARTE = "+num_carte+" | Type CARTE = "+type_carte);
+        c=(Card)em.find(Card.class, num_carte);
+        
+        if(c==null)
+        {
+            v.setMessage("carte introuvable");
+            v.setValide(false);
+            return v;
+        }
+        else
+        {
+            System.out.println(c.getDateExp().getTime()+" VS "+date_exp.getTime());
+            if (c.getTypeCarte().equalsIgnoreCase(type_carte) && c.getCvv() == cvv && c.getDateExp().getTime() == date_exp.getTime() && c.getNomCarte().equalsIgnoreCase(nom_carte)){
+                if(c.getDateExp().getTime()-System.currentTimeMillis()<=0)
+                {
+                    v.setMessage("carte expirée");
+                    v.setValide(false);
+                    return v;
+                }
+                else{
+                    v.setMessage("carte valide");
+                    v.setValide(true);
+                    return v;
+                }
+                    
+            } 
+            else
+            {
+                v.setMessage("carte invalide");
+                v.setValide(false);
+                return v;
+            }
+                
+        }
     }
 }
